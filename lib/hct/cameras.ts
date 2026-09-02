@@ -111,7 +111,7 @@ async function getCamerasWithEncryptionMock(): Promise<Camera[]> {
   "use cache";
   cacheLife("minutes");
   cacheTag("cameras");
-  const [cameras, map] = await Promise.all([getCameras("mock"), readEncryptionMap()]);
+  const [cameras, map] = await Promise.all([getCamerasMock(), readEncryptionMap()]);
   return cameras.map((c) => ({
     ...c,
     encrypted: map[c.serial]?.encrypted ?? c.encrypted ?? null,

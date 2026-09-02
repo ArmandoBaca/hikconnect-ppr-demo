@@ -9,18 +9,19 @@ export const mockCameras: Camera[] = [
 ];
 
 export const mockDoors: Door[] = [
-  { id: "mock-door-01", name: "Puerta recepción", online: true, area: "Oficinas SYSCOM", serial: "MOCKK1489", channel: "1" },
-  { id: "mock-door-02", name: "Puerta almacén", online: true, area: "Almacén", serial: "MOCKK1489", channel: "2" },
+  { id: "mock-door-01", name: "Puerta recepción", online: true, area: "Oficinas SYSCOM", serial: "MOCK0001", channel: "1" },
+  { id: "mock-door-02", name: "Puerta almacén", online: true, area: "Almacén", serial: "MOCK0003", channel: "2" },
   { id: "mock-door-03", name: "Puerta laboratorio", online: false, area: "TI", serial: "MOCKK2000", channel: "1" },
 ];
 
 const now = Date.now();
 export const mockEvents: AccessEvent[] = [
-  { id: "evt-1", personName: "Ana Martínez", doorName: "Puerta recepción", method: "Tarjeta", result: "Éxito", time: new Date(now - 12 * 60000).toISOString() },
-  { id: "evt-2", personName: "Carlos Ruiz", doorName: "Puerta almacén", method: "Huella", result: "Éxito", time: new Date(now - 47 * 60000).toISOString() },
-  { id: "evt-3", personName: "Desconocido", doorName: "Puerta recepción", method: "Tarjeta", result: "Denegado", time: new Date(now - 95 * 60000).toISOString() },
-  { id: "evt-4", personName: "Lucía Gómez", doorName: "Puerta laboratorio", method: "Rostro", result: "Éxito", time: new Date(now - 180 * 60000).toISOString() },
-  { id: "evt-5", personName: "Ana Martínez", doorName: "Puerta almacén", method: "Tarjeta", result: "Éxito", time: new Date(now - 300 * 60000).toISOString() },
+  { id: "evt-1", personName: "Ana Martínez", personId: "mock-per-01", personCode: "EMP001", doorName: "Puerta recepción", area: "Oficinas SYSCOM", method: "Tarjeta", result: "Éxito", time: new Date(now - 12 * 60000).toISOString() },
+  { id: "evt-2", personName: "Carlos Ruiz", personId: "mock-per-02", personCode: "EMP002", doorName: "Puerta almacén", area: "Almacén", method: "Huella", result: "Éxito", time: new Date(now - 47 * 60000).toISOString() },
+  { id: "evt-3", personName: "Tarjeta ••••4821", card: "90014821", doorName: "Puerta recepción", area: "Oficinas SYSCOM", method: "Tarjeta", result: "Denegado", detail: "Tarjeta no existe", time: new Date(now - 95 * 60000).toISOString() },
+  { id: "evt-4", personName: "Lucía Gómez", personId: "mock-per-03", personCode: "EMP003", doorName: "Puerta laboratorio", area: "TI", method: "Rostro", result: "Éxito", time: new Date(now - 180 * 60000).toISOString() },
+  { id: "evt-5", personName: "Pedro Sosa", personId: "mock-per-04", personCode: "CTR001", doorName: "Puerta almacén", area: "Almacén", method: "Rostro", result: "Denegado", detail: "Fuera del horario permitido", time: new Date(now - 240 * 60000).toISOString() },
+  { id: "evt-6", personName: "Ana Martínez", personId: "mock-per-01", personCode: "EMP001", doorName: "Puerta almacén", area: "Almacén", method: "Tarjeta", result: "Éxito", time: new Date(now - 300 * 60000).toISOString() },
 ];
 
 export function mockStreamSession(cameraId: string): StreamSession {

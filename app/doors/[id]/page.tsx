@@ -3,13 +3,17 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { getDoors } from "@/lib/hct/doors";
+import { getCamerasWithEncryption } from "@/lib/hct/cameras";
+import { findCameraForDoor } from "@/lib/hct/matchCamera";
 import { getAccessEvents } from "@/lib/hct/events";
 import { HctError } from "@/lib/hct/client";
 import { config } from "@/lib/config";
+import { formatDateTime } from "@/lib/format";
 import { effectiveMode } from "@/lib/settings";
 import { DoorActions } from "@/components/DoorActions";
+import { CameraLive } from "@/components/CameraLive";
 import { RequireKeys } from "@/components/RequireKeys";
-import type { Door } from "@/lib/hct/types";
+import type { Camera, Door } from "@/lib/hct/types";
 
 async function DoorEvents({ door }: { door: Door }) {
   try {
@@ -40,8 +44,9 @@ async function DoorEvents({ door }: { door: Door }) {
               <td>{e.method}</td>
               <td>
                 <span className={`badge ${e.result === "Éxito" ? "ok" : "warn"}`}>{e.result || "—"}</span>
+                {e.detail && <div className="mono">{e.detail}</div>}
               </td>
-              <td className="mono">{e.time}</td>
+              <td className="mono">{formatDateTime(e.time)}</td>
             </tr>
           ))}
         </tbody>
@@ -53,15 +58,51 @@ async function DoorEvents({ door }: { door: Door }) {
   }
 }
 
+function DoorVideo({ camera }: { camera: Camera | null }) {
+  if (!camera) {
+    return (
+      <div className="card">
+        <h3 style={{ marginBottom: 8 }}>Video</h3>
+        <p className="meta">
+          Este punto de acceso no tiene cámara en el inventario de video (mismo serial). Es
+          habitual en lectores o cerraduras sin canal de imagen. El live de Hik-Connect usa el{" "}
+          <code>id</code> de cámara, no el de la puerta.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card">
+      <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
+        <h3>Video</h3>
+        <Link href={`/cameras/${camera.id}`}>{camera.name} →</Link>
+      </div>
+      <p className="meta" style={{ marginBottom: 12 }}>
+        Canal {camera.channel} · serial {camera.serial}
+        {camera.encrypted === true ? " · stream cifrado" : ""}
+      </p>
+      <Suspense fallback={<div className="player-box compact"><div className="spinner" /></div>}>
+        <CameraLive id={camera.id} serial={camera.serial} encrypted={camera.encrypted} />
+      </Suspense>
+    </div>
+  );
+}
+
 async function DoorDetail({ id }: { id: string }) {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const door = (await getDoors(config.mode)).find((d) => d.id === id);
+  const [doors, cameras] = await Promise.all([
+    getDoors(config.mode),
+    getCamerasWithEncryption(config.mode),
+  ]);
+  const door = doors.find((d) => d.id === id);
   if (!door) {
     return <div className="alert error">Puerta no encontrada.</div>;
   }
 
+  const camera = findCameraForDoor(door, cameras);
   const isOperator = session.role === "operator";
 
   return (
@@ -79,19 +120,22 @@ async function DoorDetail({ id }: { id: string }) {
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 20 }}>
-        <h3 style={{ marginBottom: 8 }}>Comandos remotos</h3>
-        {isOperator ? (
-          <>
-            <p className="meta" style={{ marginBottom: 12 }}>
-              Cada comando exige motivo y queda en el audit log. "Abrir" es un pulso; "Dejar
-              abierta/bloqueada" mantiene el estado hasta nuevo comando.
-            </p>
-            <DoorActions doorId={door.id} doorName={door.name} full />
-          </>
-        ) : (
-          <div className="alert info">Rol viewer: solo lectura. Los comandos requieren rol operator.</div>
-        )}
+      <div className="door-ops">
+        <DoorVideo camera={camera} />
+        <div className="card">
+          <h3 style={{ marginBottom: 8 }}>Comandos remotos</h3>
+          {isOperator ? (
+            <>
+              <p className="meta" style={{ marginBottom: 12 }}>
+                Cada comando exige motivo y queda en el audit log. "Abrir" es un pulso; "Dejar
+                abierta/bloqueada" mantiene el estado hasta nuevo comando.
+              </p>
+              <DoorActions doorId={door.id} doorName={door.name} full />
+            </>
+          ) : (
+            <div className="alert info">Rol viewer: solo lectura. Los comandos requieren rol operator.</div>
+          )}
+        </div>
       </div>
 
       <h3 style={{ marginBottom: 12 }}>Marcaciones recientes (48 h)</h3>

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { getAccessEvents } from "@/lib/hct/events";
 import { config } from "@/lib/config";
+import { formatDateTime } from "@/lib/format";
 import { HctError } from "@/lib/hct/client";
 import { RequireKeys } from "@/components/RequireKeys";
 
@@ -43,14 +44,23 @@ async function EventsTable({ page }: { page: number }) {
         <tbody>
           {data.items.map((evt) => (
             <tr key={evt.id}>
-              <td className="mono">{evt.time ? new Date(evt.time).toLocaleString("es-MX") : "—"}</td>
-              <td>{evt.personName}</td>
-              <td>{evt.doorName || "—"}</td>
+              <td className="mono">{formatDateTime(evt.time)}</td>
+              <td>
+                {evt.personName}
+                {evt.personCode && evt.personCode !== evt.personName && (
+                  <div className="mono">{evt.personCode}</div>
+                )}
+              </td>
+              <td>
+                {evt.doorName || "—"}
+                {evt.area && <div className="mono">{evt.area}</div>}
+              </td>
               <td>{evt.method}</td>
               <td>
                 <span className={`badge ${evt.result === "Éxito" ? "ok" : "warn"}`}>
                   {evt.result || "—"}
                 </span>
+                {evt.detail && <div className="mono">{evt.detail}</div>}
               </td>
             </tr>
           ))}

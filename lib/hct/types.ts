@@ -21,9 +21,15 @@ export interface Door {
 export interface AccessEvent {
   id: string;
   personName: string;
+  personId?: string;
+  personCode?: string;
+  card?: string;
   doorName: string;
+  area?: string;
   method: string;
   result: string;
+  // Motivo del rechazo (viene del tipo de evento del ACS).
+  detail?: string;
   time: string;
 }
 
