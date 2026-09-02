@@ -46,6 +46,20 @@ a:hover { text-decoration: underline; }
 .nav a:hover { color: var(--text); text-decoration: none; }
 .nav .spacer { flex: 1; }
 .nav .user { color: var(--text-dim); font-size: 13px; }
+.nav-sim {
+  margin-left: -8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(224, 166, 60, 0.18);
+  color: var(--warn) !important;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.nav-sim:hover {
+  background: rgba(224, 166, 60, 0.32);
+  color: var(--text) !important;
+}
 
 .page-title { margin: 32px 0 4px; font-size: 26px; }
 .page-sub { color: var(--text-dim); margin: 0 0 24px; }

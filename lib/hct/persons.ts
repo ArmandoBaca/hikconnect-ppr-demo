@@ -1,6 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { hctFetch } from "./client";
 import { mockPersonGroups, mockPersons } from "@/lib/mock/fixtures";
+import { effectiveMode } from "@/lib/settings";
 import type { Paged, Person, PersonGroup } from "./types";
 
 // --- Grupos (departamentos) ---
@@ -30,7 +31,7 @@ function normalizeGroup(node: HctGroupNode): PersonGroup {
 }
 
 export async function getPersonGroups(mode: string): Promise<PersonGroup[]> {
-  if (mode === "mock") return getPersonGroupsMock();
+  if ((await effectiveMode(mode)) === "mock") return getPersonGroupsMock();
   const data = await hctFetch<HctGroupSearch>("/person/v1/groups/search", {
     body: { pageIndex: 1, pageSize: 100 },
   });
@@ -97,7 +98,7 @@ export async function getPersons(
   pageSize: number,
   name = "",
 ): Promise<Paged<Person>> {
-  if (mode === "mock") {
+  if ((await effectiveMode(mode)) === "mock") {
     const q = name.trim().toLowerCase();
     const all = q
       ? mockPersons.filter((p) => `${p.firstName} ${p.lastName}`.toLowerCase().includes(q))

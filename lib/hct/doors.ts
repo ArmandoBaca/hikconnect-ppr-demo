@@ -2,6 +2,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { config } from "@/lib/config";
 import { hctFetch } from "./client";
 import { mockDoors } from "@/lib/mock/fixtures";
+import { effectiveMode } from "@/lib/settings";
 import type { Door } from "./types";
 
 interface HctDoorNode {
@@ -49,7 +50,7 @@ async function fetchAllDoors(): Promise<Door[]> {
 }
 
 export async function getDoors(mode: string): Promise<Door[]> {
-  if (mode === "mock") return getDoorsMock();
+  if ((await effectiveMode(mode)) === "mock") return getDoorsMock();
   return fetchAllDoors();
 }
 

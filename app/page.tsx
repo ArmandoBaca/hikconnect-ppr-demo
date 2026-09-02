@@ -4,22 +4,11 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { getCameras } from "@/lib/hct/cameras";
 import { getDoors } from "@/lib/hct/doors";
-import { getHctKeys } from "@/lib/settings";
-import { KeysSetup } from "@/components/KeysSetup";
 import { config } from "@/lib/config";
 
 async function DashboardData() {
   const session = await getSession();
   if (!session) redirect("/login");
-
-  // Sin claves del OpenAPI en este navegador: pedirlas antes de tocar HCT.
-  if (config.mode === "live") {
-    try {
-      await getHctKeys();
-    } catch {
-      return <KeysSetup />;
-    }
-  }
 
   const [cameras, doors] = await Promise.all([
     getCameras(config.mode),

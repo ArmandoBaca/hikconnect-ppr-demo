@@ -1,6 +1,7 @@
 import { getCameras } from "./cameras";
 import { hctFetch } from "./client";
 import { readEncryptionMap, writeEncryptionMap } from "@/lib/encryptionStore";
+import { effectiveMode } from "@/lib/settings";
 
 interface DeviceDetail {
   device?: { baseInfo?: { streamEncryptEnable?: string } };
@@ -19,7 +20,7 @@ export async function syncEncryptionBatch(mode: string, limit = 50): Promise<Syn
   const cameras = await getCameras(mode);
   const serials = [...new Set(cameras.map((c) => c.serial).filter(Boolean))];
 
-  if (mode === "mock") {
+  if ((await effectiveMode(mode)) === "mock") {
     return { checked: 0, remaining: 0, total: serials.length };
   }
 

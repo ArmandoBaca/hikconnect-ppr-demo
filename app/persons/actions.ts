@@ -15,6 +15,7 @@ import { assignAccessLevel, unassignAccessLevel } from "@/lib/hct/accessLevels";
 import { addDevice, deleteDevice, type NewDevice } from "@/lib/hct/devices";
 import { audit } from "@/lib/audit";
 import { config } from "@/lib/config";
+import { effectiveMode } from "@/lib/settings";
 
 async function requireOperator() {
   const session = await getSession();
@@ -32,7 +33,7 @@ async function auditMutation(
   detail: string,
   fn: () => Promise<unknown>,
 ) {
-  if (config.mode === "mock") {
+  if ((await effectiveMode(config.mode)) === "mock") {
     await audit({ actor, action, resource, result: `mock: ${detail}`, at: new Date().toISOString() });
     return { simulated: true };
   }
@@ -123,7 +124,7 @@ export async function addDeviceAction(input: NewDevice) {
   if (!input.name.trim() || !input.serial.trim() || !input.verifyCode.trim()) {
     throw new Error("Nombre, serial y código de verificación son requeridos");
   }
-  if (config.mode === "mock") {
+  if ((await effectiveMode(config.mode)) === "mock") {
     await audit({
       actor,
       action: "add_device",

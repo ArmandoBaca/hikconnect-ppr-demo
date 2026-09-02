@@ -3,6 +3,7 @@ import { hctFetch } from "./client";
 import { getCamera } from "./cameras";
 import { getDeviceCode } from "@/lib/deviceCodes";
 import { mockStreamSession } from "@/lib/mock/fixtures";
+import { effectiveMode } from "@/lib/settings";
 import type { StreamSession } from "./types";
 
 interface StreamTokenData {
@@ -21,7 +22,7 @@ export async function createStreamSession(
   cameraId: string,
   code?: string,
 ): Promise<StreamSession> {
-  if (mode === "mock") return mockStreamSession(cameraId);
+  if ((await effectiveMode(mode)) === "mock") return mockStreamSession(cameraId);
 
   const camera = await getCamera(mode, cameraId);
   if (!camera) throw new Error("Camara no encontrada o fuera de allowlist");

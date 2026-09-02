@@ -1,5 +1,6 @@
 import { hctFetch } from "./client";
 import { mockEvents } from "@/lib/mock/fixtures";
+import { effectiveMode } from "@/lib/settings";
 import type { AccessEvent, Paged } from "./types";
 
 interface HctRecord {
@@ -44,7 +45,7 @@ export async function getAccessEvents(
   pageSize: number,
   elementId?: string,
 ): Promise<Paged<AccessEvent>> {
-  if (mode === "mock") {
+  if ((await effectiveMode(mode)) === "mock") {
     const start = (pageIndex - 1) * pageSize;
     return {
       items: mockEvents.slice(start, start + pageSize),

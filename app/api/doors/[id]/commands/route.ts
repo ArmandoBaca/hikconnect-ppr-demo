@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { remoteDoorControl, type DoorAction } from "@/lib/hct/access";
 import { audit } from "@/lib/audit";
-import { isDryRun } from "@/lib/settings";
+import { isDryRun, effectiveMode } from "@/lib/settings";
 import { config } from "@/lib/config";
 import { HctError } from "@/lib/hct/client";
 
@@ -31,13 +31,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   const dryRun = await isDryRun();
-  if (config.mode === "mock" || dryRun) {
+  const mode = await effectiveMode(config.mode);
+  if (mode === "mock" || dryRun) {
     await audit({
       actor: session.username,
       action,
       resource: id,
       reason,
-      result: config.mode === "mock" ? "mock" : "dry-run",
+      result: mode === "mock" ? "mock" : "dry-run",
       at: new Date().toISOString(),
     });
     return NextResponse.json({ ok: true, simulated: true });

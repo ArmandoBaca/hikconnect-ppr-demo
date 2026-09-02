@@ -1,6 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { hctFetch } from "./client";
 import { mockAccessLevels, mockPlatformUsers } from "@/lib/mock/fixtures";
+import { effectiveMode } from "@/lib/settings";
 import type { AccessLevel, PlatformUser } from "./types";
 
 // --- Niveles de acceso (acspm) ---
@@ -20,7 +21,7 @@ interface HctLevelPage {
 }
 
 export async function getAccessLevels(mode: string): Promise<AccessLevel[]> {
-  if (mode === "mock") return getAccessLevelsMock();
+  if ((await effectiveMode(mode)) === "mock") return getAccessLevelsMock();
   const data = await hctFetch<HctLevelPage>("/acspm/v1/accesslevel/list", {
     body: {
       accessLevelSearchRequest: {
@@ -70,7 +71,7 @@ interface HctUserPage {
 }
 
 export async function getPlatformUsers(mode: string): Promise<PlatformUser[]> {
-  if (mode === "mock") return getPlatformUsersMock();
+  if ((await effectiveMode(mode)) === "mock") return getPlatformUsersMock();
   const data = await hctFetch<HctUserPage>("/platform/v1/users/get", {
     method: "POST",
     body: { pageIndex: 1, pageSize: 100 },

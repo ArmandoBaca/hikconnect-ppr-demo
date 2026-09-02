@@ -108,3 +108,18 @@ export async function setHctKeys(appKey: string, secretKey: string): Promise<voi
 export async function forgetHctKeys(): Promise<void> {
   await clearHctCookie();
 }
+
+export async function hasHctKeys(): Promise<boolean> {
+  try {
+    await getHctKeys();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Sin claves en este navegador, el demo usa fixtures (simulados) en vez de HCT.
+export async function effectiveMode(requested: string): Promise<"live" | "mock"> {
+  if (requested !== "live") return "mock";
+  return (await hasHctKeys()) ? "live" : "mock";
+}

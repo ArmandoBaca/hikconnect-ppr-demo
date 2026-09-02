@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { getSession } from "@/lib/auth/session";
-import { getHctHost, getHctKeys, getRuntimeSettings, isDryRun } from "@/lib/settings";
+import { getHctHost, getHctKeys, getRuntimeSettings, isDryRun, hasHctKeys } from "@/lib/settings";
 import { readDeviceCodes } from "@/lib/deviceCodes";
 import { readEncryptionMap } from "@/lib/encryptionStore";
 import { config } from "@/lib/config";
@@ -10,6 +10,7 @@ import { DryRunToggle } from "@/components/DryRunToggle";
 import { DeviceCodeList } from "@/components/DeviceCodeList";
 import { ForgetKeysButton } from "@/components/ForgetKeysButton";
 import { EditableValue } from "@/components/EditableValue";
+import { KeysSetup } from "@/components/KeysSetup";
 
 function mask(secret: string): string {
   if (!secret) return "(vacío)";
@@ -33,10 +34,23 @@ async function SettingsContent() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "operator") {
+    const configured = await hasHctKeys();
     return (
       <>
         <h1 className="page-title">Configuración</h1>
-        <div className="alert info">La configuración requiere rol operator.</div>
+        <div id="claves">
+          {configured ? (
+            <div className="card">
+              <p className="meta" style={{ marginBottom: 12 }}>
+                Este navegador ya tiene claves del OpenAPI. Olvídalas para volver a los datos simulados
+                o captura otras.
+              </p>
+              <ForgetKeysButton />
+            </div>
+          ) : (
+            <KeysSetup />
+          )}
+        </div>
       </>
     );
   }
@@ -97,7 +111,7 @@ async function SettingsContent() {
         </table>
       </div>
 
-      <div className="card" style={{ marginBottom: 20 }}>
+      <div className="card" id="claves" style={{ marginBottom: 20 }}>
         <h3 style={{ marginBottom: 8 }}>Credenciales del OpenAPI (Hik-Connect for Teams)</h3>
         <p className="meta" style={{ marginBottom: 12 }}>
           Con ellas se obtiene el accessToken (válido 7 días) para todas las llamadas.{" "}

@@ -1,22 +1,13 @@
 import Link from "next/link";
 import { getSession } from "@/lib/auth/session";
-import { getHctKeys } from "@/lib/settings";
-import { config } from "@/lib/config";
+import { hasHctKeys } from "@/lib/settings";
 import { LogoutButton } from "./LogoutButton";
 
 export async function Nav() {
   const session = await getSession();
   if (!session) return null;
 
-  // Aviso persistente si esta maquina no tiene claves del OpenAPI (modo live).
-  let keysMissing = false;
-  if (config.mode === "live") {
-    try {
-      await getHctKeys();
-    } catch {
-      keysMissing = true;
-    }
-  }
+  const keysMissing = !(await hasHctKeys());
 
   return (
     <nav className="nav">
@@ -28,10 +19,10 @@ export async function Nav() {
       <Link href="/persons">Personas</Link>
       <Link href="/levels">Niveles</Link>
       <Link href="/events">Marcaciones</Link>
-      {session.role === "operator" && <Link href="/settings">Configuración</Link>}
+      <Link href="/settings">Configuración</Link>
       {keysMissing && (
-        <Link href="/" className="badge warn">
-          Sin claves API
+        <Link href="/settings#claves" className="nav-sim" title="Captura AppKey y SecretKey para usar el tenant real">
+          Resultados simulados — configurar API
         </Link>
       )}
       <div className="spacer" />

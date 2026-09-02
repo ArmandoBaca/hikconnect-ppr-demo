@@ -3,6 +3,7 @@ import { config } from "@/lib/config";
 import { hctFetch } from "./client";
 import { mockCameras } from "@/lib/mock/fixtures";
 import { readEncryptionMap } from "@/lib/encryptionStore";
+import { effectiveMode } from "@/lib/settings";
 import type { Camera } from "./types";
 
 interface HctCameraNode {
@@ -64,7 +65,7 @@ async function fetchAllCameras(): Promise<Camera[]> {
 // Mock si entra a 'use cache' (sin cookies). Live lee las claves del navegador
 // y no puede cachearse de forma global: cada visitante trae su propio tenant.
 export async function getCameras(mode: string): Promise<Camera[]> {
-  if (mode === "mock") return getCamerasMock();
+  if ((await effectiveMode(mode)) === "mock") return getCamerasMock();
   return fetchAllCameras();
 }
 
@@ -85,7 +86,7 @@ export async function getCamera(mode: string, id: string): Promise<Camera | null
 // la hidratacion del cliente y React truena con hydration mismatch en los badges.
 // La accion syncEncryption revalida el tag tras escribir el archivo.
 export async function getCamerasWithEncryption(mode: string): Promise<Camera[]> {
-  if (mode === "mock") return getCamerasWithEncryptionMock();
+  if ((await effectiveMode(mode)) === "mock") return getCamerasWithEncryptionMock();
   const [cameras, map] = await Promise.all([getCameras(mode), readEncryptionMap()]);
   return cameras.map((c) => ({
     ...c,
