@@ -26,7 +26,11 @@ export function KeysSetup() {
           setError("");
           startTransition(async () => {
             try {
-              await saveHctKeys(appKey, secretKey);
+              const res = await saveHctKeys(appKey, secretKey);
+              if (!res.ok) {
+                setError(res.error ?? "Error guardando");
+                return;
+              }
               router.refresh();
             } catch (err) {
               setError(err instanceof Error ? err.message : "Error guardando");

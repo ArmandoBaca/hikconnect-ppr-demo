@@ -96,7 +96,7 @@ npm run dev
 
 | Variable | Descripción |
 |----------|-------------|
-| `POC_MODE` | `live` (HCT real) o `mock` (fixtures) |
+| `POC_MODE` | `live` (HCT real) o `mock` (fixtures); default, se cambia en caliente en `/settings` |
 | `POC_DRY_RUN` | `true` = comandos de puerta solo se auditan (default; se cambia en caliente en `/settings`) |
 | `SESSION_SECRET` | Secreto HMAC de la cookie de sesión |
 | `POC_ADMIN_PASSWORD` / `POC_VIEWER_PASSWORD` | Contraseñas de los usuarios fijos |
@@ -211,8 +211,10 @@ Hik-Connect for Teams OpenAPI ── https://ius.hikcentralconnect.com
 
 - **BFF**: el navegador no llama a Hikvision; el servidor usa las claves de la cookie de esa
   petición (en memoria) y no las persiste en disco.
-- **Datos locales** (`data/`, gitignored, solo si corres el demo en tu PC): `settings.json`
-  (dry-run), `device-codes.json`, `encryption.json`, `audit.jsonl`.
+- **Configuración por navegador**: credenciales, modo, dry-run y códigos de cámara viven en la
+  cookie cifrada `poc_hct`; funciona en Vercel sin almacenamiento adicional.
+- **Datos temporales**: la caché de cifrado y auditoría usan `data/` en local y `/tmp` en Vercel.
+  En serverless pueden perderse entre ejecuciones.
 - **EZUIKit self-hosted** en `public/ezuikit/` con `staticPath` local (sin CDN externo) y
   headers COOP/COEP/CORP en `next.config.ts` (el decoder WASM usa `SharedArrayBuffer`).
 
@@ -254,16 +256,16 @@ Hik-Connect for Teams OpenAPI ── https://ius.hikcentralconnect.com
 
 ## Códigos de verificación
 
-Los códigos de dispositivo **no van en `.env.local` ni en el repo**. Viven en
-`data/device-codes.json` (`data/` está en `.gitignore`):
+Los códigos de dispositivo **no van en `.env.local` ni en el repo**. Viven en la cookie
+cifrada `poc_hct` de cada navegador:
 
-- Si el archivo no existe en la computadora, se crea solo la primera vez que se captura un código.
+- Otro navegador o borrar las cookies hace que vuelvan a solicitarse.
 - Al abrir una cámara cifrada sin código guardado, la UI pide el código directamente.
 - **El código se guarda solo cuando el player confirma reproducción real** (`handleSuccess` del
   SDK). HCT acepta cualquier código al crear la sesión (va embebido en la URL `ezopen://`); si es
   incorrecto, la reproducción falla en el player, la UI avisa y **no** se guarda nada.
 - Si un código guardado deja de funcionar (rotado), se borra solo y la UI vuelve a pedirlo.
-- Guardados y borrados quedan en `data/audit.jsonl`.
+- Guardados y borrados se auditan; en Vercel ese log es temporal.
 
 ---
 
@@ -275,7 +277,7 @@ Los códigos de dispositivo **no van en `.env.local` ni en el repo**. Viven en
 3. Marcaciones: tabla paginada de las últimas 48 h.
 4. Login como `admin` → detalle de una puerta, ejecutar "Abrir"; mostrar el rastro en
    `data/audit.jsonl`. En `/settings` alternar Simulados/Reales en vivo.
-5. Mostrar `POC_MODE=mock`: misma UI sin tocar el tenant.
+5. En `/settings` alternar Live/Mock en vivo: misma UI sin tocar el tenant.
 
 ---
 

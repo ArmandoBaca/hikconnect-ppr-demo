@@ -2,22 +2,25 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { setDryRun } from "@/app/settings/actions";
+import { setMode } from "@/app/settings/actions";
+import type { PocMode } from "@/lib/config";
 
-export function DryRunToggle({ enabled }: { enabled: boolean }) {
+// Interruptor en caliente de POC_MODE: guarda la preferencia cifrada en la
+// cookie del navegador. live = tenant real; mock = fixtures locales.
+export function ModeToggle({ requested }: { requested: PocMode }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ text: string; tone: "ok" | "warn" } | null>(null);
 
-  function choose(value: boolean) {
+  function choose(mode: PocMode) {
     startTransition(async () => {
       try {
-        const res = await setDryRun(value);
+        const res = await setMode(mode);
         if (!res.ok) {
           setMessage({ text: res.error ?? "Error", tone: "warn" });
           return;
         }
-        setMessage(null);
+        setMessage(res.warning ? { text: res.warning, tone: "warn" } : null);
         router.refresh();
       } catch (e) {
         setMessage({ text: e instanceof Error ? e.message : "Error", tone: "warn" });
@@ -28,20 +31,18 @@ export function DryRunToggle({ enabled }: { enabled: boolean }) {
   return (
     <span className="row">
       <button
-        type="button"
-        className={enabled ? "btn sm" : "btn ghost sm"}
+        className={requested === "live" ? "btn sm" : "btn ghost sm"}
         disabled={pending}
-        onClick={() => choose(true)}
+        onClick={() => choose("live")}
       >
-        Simulados (seguro)
+        Live (tenant real)
       </button>
       <button
-        type="button"
-        className={!enabled ? "btn sm" : "btn ghost sm"}
+        className={requested === "mock" ? "btn sm" : "btn ghost sm"}
         disabled={pending}
-        onClick={() => choose(false)}
+        onClick={() => choose("mock")}
       >
-        Reales (abren puertas)
+        Mock (datos de ejemplo)
       </button>
       {message && <span className={`badge ${message.tone}`}>{message.text}</span>}
     </span>

@@ -1,19 +1,10 @@
-import { mkdir, readFile, writeFile } from "fs/promises";
-import path from "path";
+import { readHctCookie, writeHctCookie } from "@/lib/hctCookie";
 
-// Codigos de verificacion de dispositivo (stream cifrado). Se guardan FUERA de
-// .env.local en data/device-codes.json: la carpeta data/ esta en .gitignore, asi
-// el repo sube a GitHub sin claves y cada computadora genera su propio archivo
-// la primera vez que se captura un codigo.
-const FILE = path.join(process.cwd(), "data", "device-codes.json");
+// Códigos por navegador dentro de la misma cookie cifrada de configuración.
+// Esto evita depender del sistema de archivos efímero de Vercel.
 
 export async function readDeviceCodes(): Promise<Record<string, string>> {
-  try {
-    const raw = await readFile(FILE, "utf8");
-    return JSON.parse(raw) as Record<string, string>;
-  } catch {
-    return {};
-  }
+  return (await readHctCookie())?.deviceCodes ?? {};
 }
 
 export async function getDeviceCode(serial: string): Promise<string | undefined> {
@@ -22,16 +13,18 @@ export async function getDeviceCode(serial: string): Promise<string | undefined>
 }
 
 export async function saveDeviceCode(serial: string, code: string): Promise<void> {
-  const map = await readDeviceCodes();
-  map[serial] = code;
-  await mkdir(path.dirname(FILE), { recursive: true });
-  await writeFile(FILE, JSON.stringify(map, null, 2), "utf8");
+  const settings = (await readHctCookie()) ?? {};
+  await writeHctCookie({
+    ...settings,
+    deviceCodes: { ...settings.deviceCodes, [serial]: code },
+  });
 }
 
 export async function deleteDeviceCode(serial: string): Promise<void> {
-  const map = await readDeviceCodes();
+  const settings = await readHctCookie();
+  if (!settings) return;
+  const map = { ...settings.deviceCodes };
   if (!(serial in map)) return;
   delete map[serial];
-  await mkdir(path.dirname(FILE), { recursive: true });
-  await writeFile(FILE, JSON.stringify(map, null, 2), "utf8");
+  await writeHctCookie({ ...settings, deviceCodes: map });
 }

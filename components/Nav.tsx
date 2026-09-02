@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { getSession } from "@/lib/auth/session";
-import { hasHctKeys } from "@/lib/settings";
+import { effectiveMode, hasHctKeys } from "@/lib/settings";
 import { LogoutButton } from "./LogoutButton";
 
 export async function Nav() {
   const session = await getSession();
   if (!session) return null;
 
-  const keysMissing = !(await hasHctKeys());
+  const [mode, hasKeys] = await Promise.all([effectiveMode(), hasHctKeys()]);
+  const keysMissing = !hasKeys;
 
   return (
     <nav className="nav">
@@ -20,9 +21,19 @@ export async function Nav() {
       <Link href="/levels">Niveles</Link>
       <Link href="/events">Marcaciones</Link>
       <Link href="/settings">Configuración</Link>
-      {keysMissing && (
-        <Link href="/settings#claves" className="nav-sim" title="Captura AppKey y SecretKey para usar el tenant real">
-          Resultados simulados — configurar API
+      {mode === "mock" && (
+        <Link
+          href={keysMissing ? "/settings#claves" : "/settings"}
+          className="nav-sim"
+          title={
+            keysMissing
+              ? "Captura AppKey y SecretKey para usar el tenant real"
+              : "El modo de operación está en mock; cámbialo a live en Configuración"
+          }
+        >
+          {keysMissing
+            ? "Resultados simulados — configurar API"
+            : "Resultados simulados — modo mock"}
         </Link>
       )}
       <div className="spacer" />

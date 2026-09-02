@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import crypto from "crypto";
 import { config } from "@/lib/config";
+import type { PocMode } from "@/lib/config";
 
 // Credenciales del OpenAPI por navegador (no por servidor).
 // Cookie httpOnly cifrada: este dispositivo las recuerda; otro equipo o borrar
@@ -9,10 +10,15 @@ import { config } from "@/lib/config";
 export const HCT_COOKIE = "poc_hct";
 const MAX_AGE = 60 * 60 * 24 * 180; // 180 dias
 
+// Configuración privada por navegador. Es una sola cookie cifrada y httpOnly
+// para que funcione igual en local y en despliegues serverless como Vercel.
 export interface HctCreds {
   host?: string;
-  appKey: string;
-  secretKey: string;
+  appKey?: string;
+  secretKey?: string;
+  dryRun?: boolean;
+  mode?: PocMode;
+  deviceCodes?: Record<string, string>;
 }
 
 function keyMaterial(): Buffer {
@@ -39,7 +45,7 @@ function unseal(token: string): HctCreds | null {
     decipher.setAuthTag(tag);
     const plain = Buffer.concat([decipher.update(enc), decipher.final()]);
     const parsed = JSON.parse(plain.toString("utf8")) as HctCreds;
-    if (!parsed?.appKey || !parsed?.secretKey) return null;
+    if (!parsed || typeof parsed !== "object") return null;
     return parsed;
   } catch {
     return null;
@@ -54,8 +60,13 @@ export async function readHctCookie(): Promise<HctCreds | null> {
 }
 
 export async function writeHctCookie(creds: HctCreds): Promise<void> {
+  const value = seal(creds);
+  // Los navegadores limitan ~4 KB por cookie; el sello AES-GCM ocupa extra.
+  if (value.length > 3500) {
+    throw new Error("Esta cookie de configuración está llena. Olvida códigos de cámara o claves y vuelve a guardar.");
+  }
   const jar = await cookies();
-  jar.set(HCT_COOKIE, seal(creds), {
+  jar.set(HCT_COOKIE, value, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

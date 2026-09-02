@@ -1,10 +1,12 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { getCameras } from "@/lib/hct/cameras";
 import { getDoors } from "@/lib/hct/doors";
 import { config } from "@/lib/config";
+import { effectiveMode, isDryRun } from "@/lib/settings";
 
 async function DashboardData() {
   const session = await getSession();
@@ -37,13 +39,29 @@ async function DashboardData() {
   );
 }
 
+// El modo y el dry-run efectivos salen de la cookie por navegador, que se lee
+// en cada request: por eso va aparte del shell estático.
+async function StatusLine() {
+  await connection();
+  const [mode, dryRun] = await Promise.all([effectiveMode(), isDryRun()]);
+  return (
+    <>
+      {" "}
+      · modo {mode}
+      {dryRun ? " · dry-run (comandos simulados)" : ""}
+    </>
+  );
+}
+
 export default function DashboardPage() {
   return (
     <>
       <h1 className="page-title">Panel</h1>
       <p className="page-sub">
-        POC de Video y Control de Acceso sobre Hik-Connect for Teams · modo {config.mode}
-        {config.dryRun ? " · dry-run (comandos simulados)" : ""}
+        POC de Video y Control de Acceso sobre Hik-Connect for Teams
+        <Suspense fallback={null}>
+          <StatusLine />
+        </Suspense>
       </p>
       <Suspense fallback={<div className="spinner" />}>
         <DashboardData />

@@ -35,3 +35,5 @@ desktop.ini
 # Archivos de asistentes de IA (no van al repo del cliente)
 CLAUDE.md
 AGENTS.md
+.vercel
+.env*

@@ -1,7 +1,9 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
+import os from "os";
 import path from "path";
 
-const FILE = path.join(process.cwd(), "data", "encryption.json");
+const DATA_DIR = process.env.VERCEL ? path.join(os.tmpdir(), "poc-hct") : path.join(process.cwd(), "data");
+const FILE = path.join(DATA_DIR, "encryption.json");
 
 export interface EncryptionInfo {
   encrypted: boolean;
@@ -20,6 +22,10 @@ export async function readEncryptionMap(): Promise<EncryptionMap> {
 }
 
 export async function writeEncryptionMap(map: EncryptionMap): Promise<void> {
-  await mkdir(path.dirname(FILE), { recursive: true });
-  await writeFile(FILE, JSON.stringify(map, null, 2), "utf8");
+  try {
+    await mkdir(path.dirname(FILE), { recursive: true });
+    await writeFile(FILE, JSON.stringify(map, null, 2), "utf8");
+  } catch {
+    // En Vercel /tmp es efímero; no tumbar sync ni la UI de configuración.
+  }
 }

@@ -6,6 +6,7 @@ import { getDoors } from "@/lib/hct/doors";
 import { getAccessEvents } from "@/lib/hct/events";
 import { HctError } from "@/lib/hct/client";
 import { config } from "@/lib/config";
+import { effectiveMode } from "@/lib/settings";
 import { DoorActions } from "@/components/DoorActions";
 import { RequireKeys } from "@/components/RequireKeys";
 import type { Door } from "@/lib/hct/types";
@@ -15,7 +16,9 @@ async function DoorEvents({ door }: { door: Door }) {
     // En live filtra server-side por punto de acceso (elementIDs); en mock por nombre.
     const paged = await getAccessEvents(config.mode, 1, 10, door.id);
     const items =
-      config.mode === "mock" ? paged.items.filter((e) => e.doorName === door.name) : paged.items;
+      (await effectiveMode()) === "mock"
+        ? paged.items.filter((e) => e.doorName === door.name)
+        : paged.items;
 
     if (items.length === 0) {
       return <div className="card mono">Sin marcaciones en las últimas 48 h.</div>;

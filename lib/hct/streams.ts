@@ -27,7 +27,7 @@ export async function createStreamSession(
   const camera = await getCamera(mode, cameraId);
   if (!camera) throw new Error("Camara no encontrada o fuera de allowlist");
 
-  // Prioridad: codigo explicito > data/device-codes.json (local) > .env.local (fallback)
+  // Prioridad: código explícito > cookie del navegador > .env.local (fallback)
   const effectiveCode =
     code ?? (await getDeviceCode(camera.serial)) ?? config.deviceCodes()[camera.serial];
 

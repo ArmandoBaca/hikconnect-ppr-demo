@@ -19,7 +19,7 @@ export function EditableValue({
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<{ text: string; tone: "ok" | "warn" } | null>(null);
   const [pending, startTransition] = useTransition();
 
   function save() {
@@ -29,14 +29,18 @@ export function EditableValue({
     }
     startTransition(async () => {
       try {
-        await saveHctField(field, value);
+        const res = await saveHctField(field, value);
+        if (!res.ok) {
+          setMessage({ text: res.error ?? "Error guardando", tone: "warn" });
+          return;
+        }
         setEditing(false);
         setValue("");
-        setMessage("Guardado");
+        setMessage({ text: res.warning ?? "Guardado", tone: res.warning ? "warn" : "ok" });
         router.refresh();
-        setTimeout(() => setMessage(""), 3000);
+        setTimeout(() => setMessage(null), res.warning ? 8000 : 3000);
       } catch (err) {
-        setMessage(err instanceof Error ? err.message : "Error");
+        setMessage({ text: err instanceof Error ? err.message : "Error", tone: "warn" });
       }
     });
   }
@@ -51,12 +55,12 @@ export function EditableValue({
           onClick={() => {
             setEditing(true);
             setValue(secret ? "" : display);
-            setMessage("");
+            setMessage(null);
           }}
         >
           {display}
         </button>
-        {message && <span className="badge ok">{message}</span>}
+        {message && <span className={`badge ${message.tone}`}>{message.text}</span>}
       </span>
     );
   }
@@ -87,7 +91,7 @@ export function EditableValue({
       <button type="button" className="btn ghost sm" onClick={() => setEditing(false)} disabled={pending}>
         Cancelar
       </button>
-      {message && <span className="mono">{message}</span>}
+      {message && <span className={`badge ${message.tone}`}>{message.text}</span>}
     </span>
   );
 }

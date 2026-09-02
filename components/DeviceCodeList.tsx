@@ -9,15 +9,15 @@ function mask(code: string): string {
   return `${code[0]}••••${code[code.length - 1]}`;
 }
 
-// Lista los codigos de verificacion guardados en data/device-codes.json con
-// opcion de borrarlos (la camara vuelve a pedir codigo al abrir el live).
+// Lista los códigos guardados en la cookie cifrada del navegador con opción
+// de borrarlos (la cámara vuelve a pedir código al abrir el live).
 export function DeviceCodeList({ codes }: { codes: Record<string, string> }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const serials = Object.keys(codes).sort();
 
   if (serials.length === 0) {
-    return <p className="mono">Ningún código guardado todavía en esta computadora.</p>;
+    return <p className="mono">Ningún código guardado todavía en este navegador.</p>;
   }
 
   return (
@@ -40,8 +40,8 @@ export function DeviceCodeList({ codes }: { codes: Record<string, string> }) {
                 disabled={pending}
                 onClick={() =>
                   startTransition(async () => {
-                    await removeDeviceCode(serial);
-                    router.refresh();
+                    const res = await removeDeviceCode(serial);
+                    if (res.ok) router.refresh();
                   })
                 }
               >

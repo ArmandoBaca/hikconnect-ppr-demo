@@ -1,7 +1,9 @@
 import { mkdir, appendFile } from "fs/promises";
+import os from "os";
 import path from "path";
 
-const FILE = path.join(process.cwd(), "data", "audit.jsonl");
+const DATA_DIR = process.env.VERCEL ? path.join(os.tmpdir(), "poc-hct") : path.join(process.cwd(), "data");
+const FILE = path.join(DATA_DIR, "audit.jsonl");
 
 export interface AuditEntry {
   actor: string;

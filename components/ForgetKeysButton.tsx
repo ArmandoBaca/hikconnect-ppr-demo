@@ -15,8 +15,8 @@ export function ForgetKeysButton() {
       disabled={pending}
       onClick={() => {
         startTransition(async () => {
-          await forgetBrowserKeys();
-          router.refresh();
+          const res = await forgetBrowserKeys();
+          if (res.ok) router.refresh();
         });
       }}
     >

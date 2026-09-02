@@ -1,21 +1,31 @@
 "use server";
 
 import { getSession } from "@/lib/auth/session";
-import { setDryRunOverride, setHctField, setHctKeys, forgetHctKeys } from "@/lib/settings";
+import {
+  setDryRunOverride,
+  setModeOverride,
+  effectiveMode,
+  setHctField,
+  setHctKeys,
+  forgetHctKeys,
+  hasHctKeys,
+} from "@/lib/settings";
+import type { PocMode } from "@/lib/config";
 import { deleteDeviceCode } from "@/lib/deviceCodes";
 import { audit } from "@/lib/audit";
 
-async function requireOperator() {
+type ActionResult = { ok: boolean; error?: string; warning?: string };
+
+export async function setDryRun(enabled: boolean): Promise<ActionResult> {
   const session = await getSession();
   if (!session || session.role !== "operator") {
-    throw new Error("Se requiere rol operator");
+    return { ok: false, error: "Se requiere rol operator" };
   }
-  return session;
-}
-
-export async function setDryRun(enabled: boolean) {
-  const session = await requireOperator();
-  await setDryRunOverride(enabled);
+  try {
+    await setDryRunOverride(enabled);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error guardando" };
+  }
   await audit({
     actor: session.username,
     action: "set_dry_run",
@@ -23,11 +33,42 @@ export async function setDryRun(enabled: boolean) {
     result: enabled ? "dry-run ON (comandos simulados)" : "dry-run OFF (comandos reales)",
     at: new Date().toISOString(),
   });
+  return { ok: true };
 }
 
-export async function removeDeviceCode(serial: string) {
-  const session = await requireOperator();
-  await deleteDeviceCode(serial);
+export async function setMode(mode: PocMode): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session || session.role !== "operator") {
+    return { ok: false, error: "Se requiere rol operator" };
+  }
+  try {
+    await setModeOverride(mode);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error guardando" };
+  }
+  await audit({
+    actor: session.username,
+    action: "set_mode",
+    resource: "settings",
+    result: mode === "live" ? "live (tenant real)" : "mock (datos de ejemplo)",
+    at: new Date().toISOString(),
+  });
+  if (mode === "live" && (await effectiveMode()) === "mock") {
+    return { ok: true, warning: "Sigue en mock: faltan AppKey y SecretKey en este navegador." };
+  }
+  return { ok: true };
+}
+
+export async function removeDeviceCode(serial: string): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session || session.role !== "operator") {
+    return { ok: false, error: "Se requiere rol operator" };
+  }
+  try {
+    await deleteDeviceCode(serial);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error eliminando" };
+  }
   await audit({
     actor: session.username,
     action: "delete_device_code",
@@ -35,17 +76,25 @@ export async function removeDeviceCode(serial: string) {
     result: "ok (desde configuración)",
     at: new Date().toISOString(),
   });
+  return { ok: true };
 }
 
-export async function saveHctField(field: "host" | "appKey" | "secretKey", value: string) {
+export async function saveHctField(
+  field: "host" | "appKey" | "secretKey",
+  value: string,
+): Promise<ActionResult> {
   const session = await getSession();
-  if (!session) throw new Error("Inicia sesión");
+  if (!session) return { ok: false, error: "Inicia sesión" };
   const v = value.trim();
-  if (!v) throw new Error("El valor no puede estar vacío");
+  if (!v) return { ok: false, error: "El valor no puede estar vacío" };
   if (field === "host" && !/^https:\/\/.+/.test(v)) {
-    throw new Error("El host debe ser una URL https://");
+    return { ok: false, error: "El host debe ser una URL https://" };
   }
-  await setHctField(field, v);
+  try {
+    await setHctField(field, v);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error guardando" };
+  }
   await audit({
     actor: session.username,
     action: "save_hct_field",
@@ -53,17 +102,26 @@ export async function saveHctField(field: "host" | "appKey" | "secretKey", value
     result: field === "secretKey" ? "actualizada" : v.slice(0, 12) + (v.length > 12 ? "…" : ""),
     at: new Date().toISOString(),
   });
+  if (field !== "host" && !(await hasHctKeys())) {
+    return {
+      ok: true,
+      warning: field === "appKey" ? "Guardado · falta SecretKey" : "Guardado · falta AppKey",
+    };
+  }
+  return { ok: true };
 }
 
-// Captura inicial de claves (cualquier sesion): se guardan en cookie de este
-// navegador, no en el disco del servidor.
-export async function saveHctKeys(appKey: string, secretKey: string) {
+export async function saveHctKeys(appKey: string, secretKey: string): Promise<ActionResult> {
   const session = await getSession();
-  if (!session) throw new Error("Inicia sesión para guardar las claves");
+  if (!session) return { ok: false, error: "Inicia sesión para guardar las claves" };
   if (!appKey.trim() || !secretKey.trim()) {
-    throw new Error("AppKey y SecretKey son obligatorias");
+    return { ok: false, error: "AppKey y SecretKey son obligatorias" };
   }
-  await setHctKeys(appKey.trim(), secretKey.trim());
+  try {
+    await setHctKeys(appKey.trim(), secretKey.trim());
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error guardando" };
+  }
   await audit({
     actor: session.username,
     action: "save_hct_keys",
@@ -71,12 +129,17 @@ export async function saveHctKeys(appKey: string, secretKey: string) {
     result: `appKey ${appKey.trim().slice(0, 4)}…`,
     at: new Date().toISOString(),
   });
+  return { ok: true };
 }
 
-export async function forgetBrowserKeys() {
+export async function forgetBrowserKeys(): Promise<ActionResult> {
   const session = await getSession();
-  if (!session) throw new Error("Inicia sesión");
-  await forgetHctKeys();
+  if (!session) return { ok: false, error: "Inicia sesión" };
+  try {
+    await forgetHctKeys();
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error" };
+  }
   await audit({
     actor: session.username,
     action: "forget_hct_keys",
@@ -84,4 +147,5 @@ export async function forgetBrowserKeys() {
     result: "ok",
     at: new Date().toISOString(),
   });
+  return { ok: true };
 }

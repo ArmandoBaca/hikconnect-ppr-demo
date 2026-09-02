@@ -5,8 +5,8 @@ import type { StreamSession } from "@/lib/hct/types";
 import { EzopenPlayer } from "./EzopenPlayer";
 import { LiveWithCode } from "./LiveWithCode";
 
-// La sesion se creo con un codigo guardado localmente. Si la reproduccion falla,
-// ese codigo ya no sirve (rotado o incorrecto): se borra del archivo local y se
+// La sesión se creó con un código guardado en la cookie. Si la reproducción
+// falla, ese código ya no sirve (rotado o incorrecto): se borra de la cookie y
 // cae al prompt para capturar uno nuevo.
 export function LiveAuto({ session, cameraId }: { session: StreamSession; cameraId: string }) {
   const [invalid, setInvalid] = useState(false);
