@@ -3,8 +3,16 @@ import { config } from "@/lib/config";
 import { hctFetch } from "./client";
 import { mockCameras } from "@/lib/mock/fixtures";
 import { readEncryptionMap } from "@/lib/encryptionStore";
-import { effectiveMode } from "@/lib/settings";
+import { effectiveMode, getHctKeys } from "@/lib/settings";
+import { createTtlCache } from "./ttlCache";
 import type { Camera } from "./types";
+
+const liveCache = createTtlCache<Camera[]>();
+
+export function invalidateCameraInventory(appKey?: string) {
+  if (appKey) liveCache.delete(appKey);
+  else liveCache.clear();
+}
 
 interface HctCameraNode {
   id?: string;
@@ -66,7 +74,12 @@ async function fetchAllCameras(): Promise<Camera[]> {
 // y no puede cachearse de forma global: cada visitante trae su propio tenant.
 export async function getCameras(mode: string): Promise<Camera[]> {
   if ((await effectiveMode(mode)) === "mock") return getCamerasMock();
-  return fetchAllCameras();
+  const { appKey } = await getHctKeys();
+  const hit = liveCache.get(appKey);
+  if (hit) return hit;
+  const items = await fetchAllCameras();
+  liveCache.set(appKey, items);
+  return items;
 }
 
 async function getCamerasMock(): Promise<Camera[]> {

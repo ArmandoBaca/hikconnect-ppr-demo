@@ -1,9 +1,16 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { config } from "@/lib/config";
 import { hctFetch } from "./client";
 import { mockDoors } from "@/lib/mock/fixtures";
-import { effectiveMode } from "@/lib/settings";
+import { effectiveMode, getHctKeys } from "@/lib/settings";
+import { createTtlCache } from "./ttlCache";
 import type { Door } from "./types";
+
+const liveCache = createTtlCache<Door[]>();
+
+export function invalidateDoorInventory(appKey?: string) {
+  if (appKey) liveCache.delete(appKey);
+  else liveCache.clear();
+}
 
 interface HctDoorNode {
   id?: string;
@@ -51,7 +58,12 @@ async function fetchAllDoors(): Promise<Door[]> {
 
 export async function getDoors(mode: string): Promise<Door[]> {
   if ((await effectiveMode(mode)) === "mock") return getDoorsMock();
-  return fetchAllDoors();
+  const { appKey } = await getHctKeys();
+  const hit = liveCache.get(appKey);
+  if (hit) return hit;
+  const items = await fetchAllDoors();
+  liveCache.set(appKey, items);
+  return items;
 }
 
 async function getDoorsMock(): Promise<Door[]> {
