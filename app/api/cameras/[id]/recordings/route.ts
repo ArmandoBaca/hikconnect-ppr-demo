@@ -4,6 +4,9 @@ import { searchRecordings, type RecordingTargetType } from "@/lib/hct/recordings
 import { config } from "@/lib/config";
 import { HctError } from "@/lib/hct/client";
 
+// La búsqueda histórica de Hik puede tardar más que las consultas de inventario.
+export const maxDuration = 60;
+
 interface Body {
   beginTime?: string;
   endTime?: string;
@@ -48,7 +51,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (e instanceof HctError) {
       return NextResponse.json(
         { error: e.errorCode, message: e.message },
-        { status: 502 },
+        { status: e.errorCode === "HCT_TIMEOUT" ? 504 : 502 },
       );
     }
     const message = e instanceof Error ? e.message : "Error buscando grabaciones";

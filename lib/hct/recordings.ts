@@ -84,6 +84,9 @@ export async function searchRecordings(
   const pageSize = Math.min(100, Math.max(1, input.pageSize ?? 20));
 
   const data = await hctFetch<HctRecordSearchData>("/video/v1/record/element/search", {
+    // Hik consulta el índice histórico del dispositivo/nube y puede superar
+    // el límite general de 15 s. Se deja margen antes del maxDuration de la ruta.
+    timeoutMs: 50000,
     body: {
       pageSize,
       pageIndex,
