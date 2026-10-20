@@ -42,6 +42,20 @@ export interface StreamSession {
   cameraId: string;
 }
 
+/** Segmento de grabación (local o nube) — PDF §5.5.1 record/element/search. */
+export interface RecordingSegment {
+  beginTime: string;
+  endTime: string;
+  /** 0 = almacenamiento local del dispositivo, 1 = nube. */
+  targetType: 0 | 1;
+}
+
+export interface RecordingSearchResult {
+  items: RecordingSegment[];
+  pageIndex: number;
+  pageSize: number;
+}
+
 export interface Paged<T> {
   items: T[];
   total: number;

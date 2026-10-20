@@ -33,6 +33,11 @@ async function CameraDetail({ id }: { id: string }) {
         <div className="mono">
           id {camera.id} · serial {camera.serial} · canal {camera.channel}
         </div>
+        <p style={{ margin: "12px 0 0" }}>
+          <Link href={`/recordings?camera=${encodeURIComponent(camera.id)}`}>
+            Ver grabaciones anteriores →
+          </Link>
+        </p>
       </div>
       <Suspense fallback={<div className="player-box"><div className="spinner" /></div>}>
         <CameraLive id={id} serial={camera.serial} encrypted={camera.encrypted} />

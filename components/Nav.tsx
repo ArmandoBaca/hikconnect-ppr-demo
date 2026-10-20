@@ -16,6 +16,7 @@ export async function Nav() {
         SYSCOM <span>POC</span>
       </Link>
       <Link href="/cameras">Cámaras</Link>
+      <Link href="/recordings">Grabaciones</Link>
       <Link href="/doors">Puertas</Link>
       <Link href="/persons">Personas</Link>
       <Link href="/levels">Niveles</Link>

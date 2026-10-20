@@ -1,4 +1,14 @@
-import type { Camera, Door, AccessEvent, StreamSession, PersonGroup, Person, AccessLevel, PlatformUser } from "@/lib/hct/types";
+import type {
+  Camera,
+  Door,
+  AccessEvent,
+  StreamSession,
+  RecordingSearchResult,
+  PersonGroup,
+  Person,
+  AccessLevel,
+  PlatformUser,
+} from "@/lib/hct/types";
 
 export const mockCameras: Camera[] = [
   { id: "mock-cam-01", name: "Entrada principal", online: true, area: "Oficinas SYSCOM", serial: "MOCK0001", channel: "1", encrypted: false },
@@ -30,6 +40,74 @@ export function mockStreamSession(cameraId: string): StreamSession {
     accessToken: "at.mock-token-sin-validez",
     domain: "https://iusopen.ezvizlife.com",
     template: "pcLive",
+    mock: true,
+    cameraId,
+  };
+}
+
+function pad(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+/** Offset local del host (p. ej. -06:00) para fixtures de búsqueda. */
+function localOffset(): string {
+  const mins = -new Date().getTimezoneOffset();
+  const sign = mins >= 0 ? "+" : "-";
+  const abs = Math.abs(mins);
+  return `${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`;
+}
+
+function localIso(d: Date): string {
+  return (
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+    `T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}` +
+    localOffset()
+  );
+}
+
+export function mockRecordingSearch(
+  _cameraId: string,
+  targetType: 0 | 1,
+  pageIndex: number,
+  pageSize: number,
+): RecordingSearchResult {
+  const dayStart = new Date();
+  dayStart.setHours(8, 0, 0, 0);
+  const items = [
+    {
+      beginTime: localIso(dayStart),
+      endTime: localIso(new Date(dayStart.getTime() + 45 * 60_000)),
+      targetType,
+    },
+    {
+      beginTime: localIso(new Date(dayStart.getTime() + 2 * 3600_000)),
+      endTime: localIso(new Date(dayStart.getTime() + 2 * 3600_000 + 12 * 60_000)),
+      targetType,
+    },
+    {
+      beginTime: localIso(new Date(dayStart.getTime() + 5 * 3600_000)),
+      endTime: localIso(new Date(dayStart.getTime() + 5 * 3600_000 + 90 * 60_000)),
+      targetType,
+    },
+  ] as const;
+
+  return {
+    items: [...items],
+    pageIndex,
+    pageSize,
+  };
+}
+
+export function mockPlaybackSession(
+  cameraId: string,
+  beginTime: string,
+  _endTime: string,
+): StreamSession {
+  return {
+    url: `ezopen://open.ezviz.com/MOCK0001/1.rec?begin=${encodeURIComponent(beginTime)}`,
+    accessToken: "at.mock-token-sin-validez",
+    domain: "https://iusopen.ezvizlife.com",
+    template: "pcRec",
     mock: true,
     cameraId,
   };

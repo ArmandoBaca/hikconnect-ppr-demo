@@ -30,6 +30,11 @@ async function DashboardData() {
         <div className="stat">{doors.length}</div>
         <div className="meta">{doors.filter((d) => d.online).length} en línea</div>
       </Link>
+      <Link href="/recordings" className="card" style={{ display: "block" }}>
+        <h3>Grabaciones</h3>
+        <div className="stat">Playback</div>
+        <div className="meta">Segmentos local o nube</div>
+      </Link>
       <Link href="/events" className="card" style={{ display: "block" }}>
         <h3>Marcaciones</h3>
         <div className="stat ok">48 h</div>

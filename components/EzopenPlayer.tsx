@@ -87,7 +87,7 @@ export function EzopenPlayer({
         height={PLAYER_HEIGHT}
         style={{ border: "none", background: "#000" }}
         allow="autoplay; fullscreen"
-        title="Video en vivo"
+        title={session.template === "pcRec" ? "Reproducción de grabación" : "Video en vivo"}
       />
     </div>
   );
