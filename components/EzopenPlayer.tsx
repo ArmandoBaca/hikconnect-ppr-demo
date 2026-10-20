@@ -37,7 +37,8 @@ export function EzopenPlayer({
     ? ""
     : `/player.html?url=${encodeURIComponent(session.url)}` +
       `&token=${encodeURIComponent(session.accessToken)}` +
-      `&domain=${encodeURIComponent(session.domain)}`;
+      `&domain=${encodeURIComponent(session.domain)}` +
+      `&template=${encodeURIComponent(session.template)}`;
 
   useEffect(() => {
     const iframe = iframeRef.current;

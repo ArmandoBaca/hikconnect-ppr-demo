@@ -46,7 +46,13 @@
       var url = p.get("url") || "";
       var accessToken = p.get("token") || "";
       var domain = p.get("domain") || "";
-      var template = url.indexOf(".rec") > -1 ? "pcRec" : "pcLive";
+      var forced = p.get("template");
+      var template =
+        forced === "pcRec" || forced === "pcLive"
+          ? forced
+          : url.indexOf(".rec") > -1
+            ? "pcRec"
+            : "pcLive";
 
       function fail(msg) {
         var e = document.getElementById("err");

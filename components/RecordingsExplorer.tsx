@@ -55,7 +55,7 @@ type PlayState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "needsCode"; segment: RecordingSegment }
-  | { status: "ready"; session: StreamSession; segment: RecordingSegment }
+  | { status: "ready"; session: StreamSession; segment: RecordingSegment; code?: string }
   | { status: "error"; message: string };
 
 export function RecordingsExplorer({
@@ -154,14 +154,7 @@ export function RecordingsExplorer({
         });
         return;
       }
-      setPlay({ status: "ready", session: data, segment });
-      if (deviceCode) {
-        fetch(`/api/cameras/${cameraId}/code`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code: deviceCode }),
-        });
-      }
+      setPlay({ status: "ready", session: data, segment, code: deviceCode });
     } catch (e) {
       setPlay({
         status: "error",
@@ -370,7 +363,24 @@ export function RecordingsExplorer({
             </div>
             <EzopenPlayer
               session={play.session}
-              onError={() => setPlay({ status: "needsCode", segment: play.segment })}
+              onPlaying={() => {
+                if (!play.code) return;
+                fetch(`/api/cameras/${cameraId}/code`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ code: play.code }),
+                });
+              }}
+              onError={() => {
+                if (selectedCamera?.encrypted === true || play.code) {
+                  setPlay({ status: "needsCode", segment: play.segment });
+                  return;
+                }
+                setPlay({
+                  status: "error",
+                  message: "No se pudo reproducir el segmento. Revisa el intervalo y el origen.",
+                });
+              }}
             />
           </>
         )}
