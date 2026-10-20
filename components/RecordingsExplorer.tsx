@@ -71,6 +71,7 @@ export function RecordingsExplorer({
       ? initialCameraId
       : cameras[0]?.id ?? "",
   );
+  const [cameraQuery, setCameraQuery] = useState("");
   const [beginLocal, setBeginLocal] = useState(defaults.begin);
   const [endLocal, setEndLocal] = useState(defaults.end);
   const [targetType, setTargetType] = useState<0 | 1>(0);
@@ -83,7 +84,24 @@ export function RecordingsExplorer({
   const [code, setCode] = useState("");
   const pageSize = 20;
 
+  const filteredCameras = useMemo(() => {
+    const q = cameraQuery.trim().toLowerCase();
+    if (!q) return cameras;
+    return cameras.filter((c) => {
+      const haystack = `${c.name} ${c.serial} ${c.area} ${c.channel} ch${c.channel}`.toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [cameras, cameraQuery]);
+
   const selectedCamera = cameras.find((c) => c.id === cameraId);
+
+  function selectCamera(id: string) {
+    setCameraId(id);
+    setItems(null);
+    setEmptyHint(false);
+    setSearchError("");
+    setPlay({ status: "idle" });
+  }
 
   async function runSearch(page = 1) {
     if (!cameraId) return;
@@ -182,20 +200,46 @@ export function RecordingsExplorer({
             void runSearch(1);
           }}
         >
-          <label htmlFor="rec-camera">Cámara</label>
+          <label htmlFor="rec-camera-q">Buscar cámara</label>
+          <input
+            id="rec-camera-q"
+            className="input"
+            placeholder="Nombre, serial, área o canal…"
+            value={cameraQuery}
+            onChange={(e) => {
+              const next = e.target.value;
+              setCameraQuery(next);
+              const q = next.trim().toLowerCase();
+              const matches = q
+                ? cameras.filter((c) =>
+                    `${c.name} ${c.serial} ${c.area} ${c.channel} ch${c.channel}`
+                      .toLowerCase()
+                      .includes(q),
+                  )
+                : cameras;
+              if (matches.length > 0 && !matches.some((c) => c.id === cameraId)) {
+                selectCamera(matches[0].id);
+              }
+            }}
+          />
+          <label htmlFor="rec-camera">
+            Cámara
+            <span className="mono">
+              {" "}
+              · {filteredCameras.length} de {cameras.length}
+            </span>
+          </label>
           <select
             id="rec-camera"
             className="input"
-            value={cameraId}
-            onChange={(e) => {
-              setCameraId(e.target.value);
-              setItems(null);
-              setPlay({ status: "idle" });
-            }}
+            value={filteredCameras.some((c) => c.id === cameraId) ? cameraId : ""}
+            onChange={(e) => selectCamera(e.target.value)}
           >
-            {cameras.map((c) => (
+            {filteredCameras.length === 0 && <option value="">Sin coincidencias</option>}
+            {filteredCameras.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name} · {c.serial} · CH{c.channel}
+                {c.name}
+                {c.area ? ` · ${c.area}` : ""} · {c.serial} · CH{c.channel}
               </option>
             ))}
           </select>
@@ -237,7 +281,11 @@ export function RecordingsExplorer({
           </select>
 
           <div className="row" style={{ marginTop: 18 }}>
-            <button type="submit" className="btn" disabled={searching || !cameraId}>
+            <button
+              type="submit"
+              className="btn"
+              disabled={searching || !filteredCameras.some((c) => c.id === cameraId)}
+            >
               {searching ? "Buscando…" : "Buscar segmentos"}
             </button>
             {selectedCamera && (
